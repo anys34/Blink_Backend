@@ -3,7 +3,7 @@ name: ⚙️ 배포 / 환경 설정
 about: 배포 작업, CI/CD, 환경 설정 변경 시 사용하세요.
 title: "[배포/설정] 제목을 입력해주세요"
 labels: ["🚢 배포", "⚙ 환경설정"]
-assignees: []
+assignees: [ anys34 ]
 ---
 
 ## 🎯 작업 목적
