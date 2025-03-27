@@ -1,0 +1,21 @@
+blank_issues_enabled: false
+contact_links: []
+issue_templates:
+  - name: 기능 요청
+    description: 새로운 기능을 제안하거나 구현할 때 사용합니다.
+    file: feature_request.md
+  - name: 버그 리포트
+    description: 문제나 오류를 보고합니다.
+    file: bug_report.md
+  - name: 개선 / 리팩토링
+    description: 코드 개선이나 리팩토링을 위한 이슈입니다.
+    file: improvement.md
+  - name: 문서 작업
+    description: 문서 관련 이슈를 관리합니다.
+    file: documentation.md
+  - name: 배포 / 환경 설정
+    description: 배포나 CI/CD, 개발 환경 구성 변경 시 사용합니다.
+    file: deploy_or_env.md
+  - name: 긴급 이슈
+    description: 빠른 대응이 필요한 이슈입니다.
+    file: urgent.md
