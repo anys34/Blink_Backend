@@ -44,6 +44,12 @@ ktlint {
     }
 }
 
+jib {
+    from {
+        image = "eclipse-temurin:21-jdk"
+    }
+}
+
 allOpen {
     annotation("jakarta.persistence.Entity")
     annotation("jakarta.persistence.MappedSuperclass")
