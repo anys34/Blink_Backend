@@ -47,21 +47,10 @@ jobs:
             ${{ runner.os }}-gradle-
 
       - name: Run ktlint and generate checkstyle report
-        run: ./gradlew ktlintCheck
-        continue-on-error: true
-
-      - name: Report ktlint results with reviewdog
-        if: always()
-        uses: reviewdog/action-reviewdog@v1
+        uses: ScaCap/action-ktlint@master
         with:
-          name: ktlint
-          reporter: github-pr-check
-          tool_name: ktlint
-          fail_on_error: false
-          filter_mode: diff_context
-          level: warning
-          input: build/reports/ktlint/ktlint-checkstyle-report.xml
-          format: checkstyle
+          github_token: ${{ secrets.github_token }}
+          reporter: github-pr-review
 
       - name: Build with Gradle
         run: |
