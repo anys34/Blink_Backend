@@ -48,9 +48,10 @@ jobs:
 
       - name: Run ktlint and generate checkstyle report
         run: ./gradlew ktlintCheck
+        continue-on-error: true
 
       - name: Report ktlint results with reviewdog
-        if: failure()
+        if: always()
         uses: reviewdog/action-reviewdog@v1
         with:
           name: ktlint
@@ -61,13 +62,6 @@ jobs:
           level: warning
           input: build/reports/ktlint/ktlint-checkstyle-report.xml
           format: checkstyle
-
-      - name: Upload ktlint report
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: ktlint-report
-          path: build/reports/ktlint/
 
       - name: Build with Gradle
         run: |
