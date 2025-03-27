@@ -51,7 +51,7 @@ jobs:
 
       - name: Report ktlint results with reviewdog
         if: failure()
-        uses: reviewdog/action-reviewdog@v5
+        uses: reviewdog/action-reviewdog@v1
         with:
           name: ktlint
           reporter: github-pr-check
