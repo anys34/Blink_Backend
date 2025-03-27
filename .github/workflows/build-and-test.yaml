@@ -2,16 +2,7 @@ name: Build & Test
 
 on:
   pull_request:
-    branches:
-      - main
-      - develop
-      - feat/**
-      - refactor/**
-      - fix/**
-      - hotfix/**
-      - revert/**
-      - chore/**
-      - test/**
+    types: [opened, synchronize, reopened, ready_for_review]
 
 permissions:
   contents: read
