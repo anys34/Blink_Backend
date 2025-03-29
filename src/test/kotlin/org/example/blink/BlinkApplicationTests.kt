@@ -9,5 +9,4 @@ class BlinkApplicationTests {
     @Test
     fun contextLoads() {
     }
-
 }

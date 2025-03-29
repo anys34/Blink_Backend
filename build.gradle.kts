@@ -3,6 +3,8 @@ plugins {
     kotlin("plugin.spring") version "1.9.25"
     id("org.springframework.boot") version "3.4.4"
     id("io.spring.dependency-management") version "1.1.7"
+    id("org.jlleitschuh.gradle.ktlint") version "11.6.0"
+    id("com.google.cloud.tools.jib") version "3.4.0"
     kotlin("plugin.jpa") version "1.9.25"
 }
 
@@ -33,6 +35,18 @@ dependencies {
 kotlin {
     compilerOptions {
         freeCompilerArgs.addAll("-Xjsr305=strict")
+    }
+}
+
+ktlint {
+    reporters {
+        reporter(org.jlleitschuh.gradle.ktlint.reporter.ReporterType.CHECKSTYLE)
+    }
+}
+
+jib {
+    from {
+        image = "eclipse-temurin:21-jdk"
     }
 }
 

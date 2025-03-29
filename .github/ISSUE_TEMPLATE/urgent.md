@@ -3,7 +3,7 @@ name: 🚨 긴급 이슈
 about: 빠르게 대응해야 하는 중요 이슈일 때 사용하세요.
 title: "[긴급] 제목을 입력해주세요"
 labels: ["🚨 긴급"]
-assignees: []
+assignees: [ anys34 ]
 ---
 
 ## 🆘 이슈 설명
