@@ -1,0 +1,535 @@
+---
+alwaysApply: true
+---
+# Spring Boot + Kotlin 백엔드 프로젝트 개발 가이드라인
+
+You are a Senior Backend Developer and an Expert in Spring Boot, Kotlin, JPA, Spring Security, and modern backend development. You are thoughtful, give nuanced answers, and are brilliant at reasoning. You carefully provide accurate, factual, thoughtful answers, and are a genius at reasoning.
+
+## 기본 원칙
+- Follow the user's requirements carefully & to the letter.
+- First think step-by-step - describe your plan for what to build in pseudocode, written out in great detail.
+- Confirm, then write code!
+- Always write correct, best practice, DRY principle (Don't Repeat Yourself), bug free, fully functional and working code.
+- Focus on clean, readable, and maintainable code.
+- Fully implement all requested functionality.
+- Leave NO todo's, placeholders or missing pieces.
+- Ensure code is complete! Verify thoroughly finalized.
+- Include all required imports, and ensure proper naming of key components.
+- Be concise and minimize unnecessary prose.
+
+## 기술 스택
+- **Framework**: Spring Boot 3.4.4
+- **Language**: Kotlin (최신 stable 버전)
+- **Build Tool**: Gradle (Kotlin DSL)
+- **Database**: MySQL
+- **ORM**: Spring Data JPA + Hibernate
+- **Security**: Spring Security + JWT
+- **Cache**: Redis
+- **HTTP Client**: OpenFeign
+- **API Documentation**: Swagger/OpenAPI 3 (Interface 기반)
+- **Code Style**: ktlint
+
+## 프로젝트 디렉토리 구조 (도메인별 패키지 분리)
+```
+src/main/kotlin/com/example/app/
+├── config/                 # 설정 클래스들
+│   ├── SecurityConfig.kt
+│   ├── JpaConfig.kt
+│   ├── RedisConfig.kt
+│   ├── FeignConfig.kt
+│   └── SwaggerConfig.kt
+├── common/                 # 공통 유틸리티
+│   ├── exception/         # 예외 처리
+│   ├── response/          # 공통 응답 DTO
+│   ├── util/              # 유틸리티 클래스
+│   └── constants/         # 상수
+├── security/               # 보안 관련
+│   ├── jwt/               # JWT 처리
+│   ├── filter/            # 보안 필터
+│   └── service/           # 보안 서비스
+├── domain/                 # 도메인별 패키지
+│   ├── user/              # 사용자 도메인
+│   │   ├── controller/    # REST Controller
+│   │   ├── service/       # 비즈니스 로직
+│   │   ├── repository/    # 데이터 접근
+│   │   ├── entity/        # JPA Entity
+│   │   ├── dto/           # DTO 클래스
+│   │   └── client/        # 외부 API 클라이언트
+│   └── product/           # 상품 도메인 (예시)
+│       ├── controller/
+│       ├── service/
+│       ├── repository/
+│       ├── entity/
+│       ├── dto/
+│       └── client/
+└── Application.kt          # 메인 애플리케이션 클래스
+```
+
+## 코드 작성 규칙
+
+### 1. Kotlin Scope Functions 적극 활용
+- **let**: nullable 체크 및 변환
+- **run**: 객체 컨텍스트에서 코드 블록 실행
+- **with**: 객체의 프로퍼티나 함수에 접근
+- **apply**: 객체 초기화 및 설정
+- **also**: 객체에 대한 추가 작업 수행
+
+### 2. 네이밍 컨벤션
+- 클래스명: PascalCase
+- 함수/변수명: camelCase
+- 상수: UPPER_SNAKE_CASE
+- 패키지명: lowercase
+- 파일명: PascalCase.kt
+
+### 3. Controller 인터페이스 기반 Swagger 작성
+```kotlin
+@Tag(name = "User API", description = "사용자 관리 API")
+interface UserApi {
+    @Operation(summary = "사용자 조회", description = "ID로 사용자 정보를 조회합니다.")
+    @ApiResponses(
+        value = [
+            ApiResponse(responseCode = "200", description = "조회 성공"),
+            ApiResponse(responseCode = "404", description = "사용자를 찾을 수 없음")
+        ]
+    )
+    fun getUser(
+        @Parameter(description = "사용자 ID", required = true)
+        @PathVariable id: Long
+    ): ResponseEntity<UserResponse>
+}
+```
+
+### 4. JPA Entity 작성 규칙
+- data class 사용 지양 (JPA 호환성)
+- nullable 필드는 명시적으로 표현
+- 연관관계는 지연 로딩(LAZY) 기본 사용
+- BaseEntity를 통한 공통 필드 관리
+
+### 5. Service Layer 규칙
+- 비즈니스 로직 캡슐화
+- 트랜잭션 처리 (@Transactional)
+- scope function을 활용한 코드 간소화
+- 예외 처리는 도메인 예외로 변환
+
+### 6. Repository Layer 규칙
+- Spring Data JPA 인터페이스 활용
+- 복잡한 쿼리는 @Query 또는 QueryDSL 사용
+- 메서드명 기반 쿼리 생성 활용
+
+### 7. 예외 처리
+- 도메인별 커스텀 예외 정의
+- @ControllerAdvice를 통한 글로벌 예외 처리
+- 표준화된 에러 응답 구조
+
+### 8. Security 규칙
+- JWT 토큰 기반 인증
+- Method Security 활용
+- CORS 설정 적용
+- 비밀번호 암호화 (BCrypt)
+
+## 예제 코드
+
+### 1. Entity 예제
+```kotlin
+@Entity
+@Table(name = "users")
+class User(
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    val id: Long = 0L,
+
+    @Column(nullable = false, unique = true)
+    val email: String,
+
+    @Column(nullable = false)
+    val password: String,
+
+    @Column(nullable = false)
+    val name: String,
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    val role: UserRole = UserRole.USER,
+
+    @Column(nullable = false)
+    val isActive: Boolean = true
+) : BaseEntity() {
+
+    fun updateProfile(name: String): User = apply {
+        this.name = name
+    }
+
+    fun deactivate(): User = apply {
+        this.isActive = false
+    }
+}
+
+@MappedSuperclass
+@EntityListeners(AuditingEntityListener::class)
+abstract class BaseEntity {
+    @CreatedDate
+    @Column(nullable = false, updatable = false)
+    var createdAt: LocalDateTime = LocalDateTime.now()
+
+    @LastModifiedDate
+    @Column(nullable = false)
+    var updatedAt: LocalDateTime = LocalDateTime.now()
+}
+```
+
+### 2. Repository 예제
+```kotlin
+@Repository
+interface UserRepository : JpaRepository<User, Long> {
+    fun findByEmail(email: String): User?
+    
+    fun findByEmailAndIsActive(email: String, isActive: Boolean): User?
+    
+    @Query("SELECT u FROM User u WHERE u.role = :role AND u.isActive = true")
+    fun findActiveUsersByRole(@Param("role") role: UserRole): List<User>
+    
+    fun existsByEmail(email: String): Boolean
+}
+```
+
+### 3. Service 예제
+```kotlin
+@Service
+@Transactional(readOnly = true)
+class UserService(
+    private val userRepository: UserRepository,
+    private val passwordEncoder: PasswordEncoder,
+    private val redisTemplate: RedisTemplate<String, String>
+) {
+
+    @Transactional
+    fun createUser(request: CreateUserRequest): UserResponse {
+        return request.run {
+            // 이메일 중복 체크
+            require(!userRepository.existsByEmail(email)) { 
+                "이미 존재하는 이메일입니다: $email" 
+            }
+            
+            // 사용자 생성 및 저장
+            User(
+                email = email,
+                password = passwordEncoder.encode(password),
+                name = name,
+                role = role
+            ).let { user ->
+                userRepository.save(user)
+            }.also { savedUser ->
+                // 캐시에 저장
+                cacheUser(savedUser)
+            }.let { user ->
+                UserResponse.from(user)
+            }
+        }
+    }
+
+    fun getUserById(id: Long): UserResponse {
+        return getCachedUser(id)
+            ?: userRepository.findById(id)
+                .orElseThrow { UserNotFoundException("사용자를 찾을 수 없습니다: $id") }
+                .also { user -> cacheUser(user) }
+                .let { user -> UserResponse.from(user) }
+    }
+
+    @Transactional
+    fun updateUser(id: Long, request: UpdateUserRequest): UserResponse {
+        return userRepository.findById(id)
+            .orElseThrow { UserNotFoundException("사용자를 찾을 수 없습니다: $id") }
+            .apply { updateProfile(request.name) }
+            .also { user -> 
+                userRepository.save(user)
+                cacheUser(user)
+            }
+            .let { user -> UserResponse.from(user) }
+    }
+
+    private fun cacheUser(user: User) {
+        redisTemplate.opsForValue().set(
+            "user:${user.id}",
+            ObjectMapper().writeValueAsString(UserResponse.from(user)),
+            Duration.ofMinutes(30)
+        )
+    }
+
+    private fun getCachedUser(id: Long): UserResponse? {
+        return redisTemplate.opsForValue().get("user:$id")?.let { cached ->
+            ObjectMapper().readValue(cached, UserResponse::class.java)
+        }
+    }
+}
+```
+
+### 4. Controller Interface & Implementation 예제
+```kotlin
+// Controller Interface (Swagger 정의)
+@Tag(name = "User API", description = "사용자 관리 API")
+@RequestMapping("/api/v1/users")
+interface UserApi {
+
+    @Operation(summary = "사용자 생성", description = "새로운 사용자를 생성합니다.")
+    @ApiResponses(
+        value = [
+            ApiResponse(responseCode = "201", description = "생성 성공"),
+            ApiResponse(responseCode = "400", description = "잘못된 요청"),
+            ApiResponse(responseCode = "409", description = "이메일 중복")
+        ]
+    )
+    @PostMapping
+    fun createUser(
+        @Valid @RequestBody request: CreateUserRequest
+    ): ResponseEntity<ApiResponse<UserResponse>>
+
+    @Operation(summary = "사용자 조회", description = "ID로 사용자 정보를 조회합니다.")
+    @GetMapping("/{id}")
+    fun getUser(
+        @Parameter(description = "사용자 ID", required = true)
+        @PathVariable id: Long
+    ): ResponseEntity<ApiResponse<UserResponse>>
+
+    @Operation(summary = "사용자 정보 수정")
+    @PutMapping("/{id}")
+    fun updateUser(
+        @PathVariable id: Long,
+        @Valid @RequestBody request: UpdateUserRequest
+    ): ResponseEntity<ApiResponse<UserResponse>>
+}
+
+// Controller Implementation
+@RestController
+class UserController(
+    private val userService: UserService
+) : UserApi {
+
+    override fun createUser(request: CreateUserRequest): ResponseEntity<ApiResponse<UserResponse>> {
+        return userService.createUser(request)
+            .let { user -> ApiResponse.success(user, "사용자가 성공적으로 생성되었습니다.") }
+            .let { response -> ResponseEntity.status(HttpStatus.CREATED).body(response) }
+    }
+
+    override fun getUser(id: Long): ResponseEntity<ApiResponse<UserResponse>> {
+        return userService.getUserById(id)
+            .let { user -> ApiResponse.success(user) }
+            .let { response -> ResponseEntity.ok(response) }
+    }
+
+    override fun updateUser(id: Long, request: UpdateUserRequest): ResponseEntity<ApiResponse<UserResponse>> {
+        return userService.updateUser(id, request)
+            .let { user -> ApiResponse.success(user, "사용자 정보가 성공적으로 수정되었습니다.") }
+            .let { response -> ResponseEntity.ok(response) }
+    }
+}
+```
+
+### 5. DTO 예제
+```kotlin
+data class CreateUserRequest(
+    @field:Email(message = "올바른 이메일 형식이 아닙니다.")
+    @field:NotBlank(message = "이메일은 필수입니다.")
+    val email: String,
+
+    @field:Size(min = 8, max = 20, message = "비밀번호는 8자 이상 20자 이하여야 합니다.")
+    @field:NotBlank(message = "비밀번호는 필수입니다.")
+    val password: String,
+
+    @field:Size(min = 2, max = 50, message = "이름은 2자 이상 50자 이하여야 합니다.")
+    @field:NotBlank(message = "이름은 필수입니다.")
+    val name: String,
+
+    @field:NotNull(message = "역할은 필수입니다.")
+    val role: UserRole = UserRole.USER
+)
+
+data class UserResponse(
+    val id: Long,
+    val email: String,
+    val name: String,
+    val role: UserRole,
+    val isActive: Boolean,
+    val createdAt: LocalDateTime,
+    val updatedAt: LocalDateTime
+) {
+    companion object {
+        fun from(user: User): UserResponse = with(user) {
+            UserResponse(
+                id = id,
+                email = email,
+                name = name,
+                role = role,
+                isActive = isActive,
+                createdAt = createdAt,
+                updatedAt = updatedAt
+            )
+        }
+    }
+}
+```
+
+### 6. 글로벌 예외 처리 예제
+```kotlin
+@RestControllerAdvice
+class GlobalExceptionHandler {
+
+    @ExceptionHandler(UserNotFoundException::class)
+    fun handleUserNotFoundException(ex: UserNotFoundException): ResponseEntity<ApiResponse<Nothing>> {
+        return ApiResponse.error("USER_NOT_FOUND", ex.message ?: "사용자를 찾을 수 없습니다.")
+            .let { response -> ResponseEntity.status(HttpStatus.NOT_FOUND).body(response) }
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException::class)
+    fun handleValidationException(ex: MethodArgumentNotValidException): ResponseEntity<ApiResponse<Nothing>> {
+        val errors = ex.bindingResult.fieldErrors
+            .associate { it.field to (it.defaultMessage ?: "유효하지 않은 값입니다.") }
+        
+        return ApiResponse.error("VALIDATION_FAILED", "입력값 검증에 실패했습니다.", errors)
+            .let { response -> ResponseEntity.badRequest().body(response) }
+    }
+
+    @ExceptionHandler(Exception::class)
+    fun handleGeneralException(ex: Exception): ResponseEntity<ApiResponse<Nothing>> {
+        return ApiResponse.error("INTERNAL_SERVER_ERROR", "서버 내부 오류가 발생했습니다.")
+            .let { response -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response) }
+    }
+}
+
+// 공통 응답 DTO
+data class ApiResponse<T>(
+    val success: Boolean,
+    val message: String,
+    val data: T? = null,
+    val errorCode: String? = null,
+    val errors: Map<String, String>? = null,
+    val timestamp: LocalDateTime = LocalDateTime.now()
+) {
+    companion object {
+        fun <T> success(data: T, message: String = "성공"): ApiResponse<T> {
+            return ApiResponse(success = true, message = message, data = data)
+        }
+
+        fun <T> error(errorCode: String, message: String, errors: Map<String, String>? = null): ApiResponse<T> {
+            return ApiResponse(success = false, message = message, errorCode = errorCode, errors = errors)
+        }
+    }
+}
+```
+
+### 7. Security Configuration 예제
+```kotlin
+@Configuration
+@EnableWebSecurity
+@EnableMethodSecurity(prePostEnabled = true)
+class SecurityConfig(
+    private val jwtAuthenticationEntryPoint: JwtAuthenticationEntryPoint,
+    private val jwtRequestFilter: JwtRequestFilter
+) {
+
+    @Bean
+    fun passwordEncoder(): PasswordEncoder = BCryptPasswordEncoder()
+
+    @Bean
+    fun authenticationManager(config: AuthenticationConfiguration): AuthenticationManager =
+        config.authenticationManager
+
+    @Bean
+    fun filterChain(http: HttpSecurity): SecurityFilterChain {
+        return http
+            .csrf { it.disable() }
+            .cors { it.configurationSource(corsConfigurationSource()) }
+            .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
+            .authorizeHttpRequests { authorize ->
+                authorize
+                    .requestMatchers("/api/v1/auth/**").permitAll()
+                    .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                    .requestMatchers(HttpMethod.GET, "/api/v1/users/**").hasRole("USER")
+                    .requestMatchers(HttpMethod.POST, "/api/v1/users/**").hasRole("ADMIN")
+                    .anyRequest().authenticated()
+            }
+            .exceptionHandling { it.authenticationEntryPoint(jwtAuthenticationEntryPoint) }
+            .addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter::class.java)
+            .build()
+    }
+
+    @Bean
+    fun corsConfigurationSource(): CorsConfigurationSource {
+        return CorsConfiguration().apply {
+            allowedOriginPatterns = listOf("*")
+            allowedMethods = listOf("GET", "POST", "PUT", "DELETE", "OPTIONS")
+            allowedHeaders = listOf("*")
+            allowCredentials = true
+        }.let { configuration ->
+            UrlBasedCorsConfigurationSource().apply {
+                registerCorsConfiguration("/**", configuration)
+            }
+        }
+    }
+}
+```
+
+### 8. Feign Client 예제
+```kotlin
+@FeignClient(
+    name = "external-api",
+    url = "\${external.api.url}",
+    configuration = [FeignConfig::class]
+)
+interface ExternalApiClient {
+
+    @GetMapping("/users/{id}")
+    fun getExternalUser(@PathVariable id: Long): ExternalUserResponse
+
+    @PostMapping("/users")
+    fun createExternalUser(@RequestBody request: CreateExternalUserRequest): ExternalUserResponse
+}
+
+@Configuration
+class FeignConfig {
+
+    @Bean
+    fun feignLoggerLevel(): Logger.Level = Logger.Level.BASIC
+
+    @Bean
+    fun requestInterceptor(): RequestInterceptor {
+        return RequestInterceptor { template ->
+            template.header("Authorization", "Bearer \${external.api.token}")
+            template.header("Content-Type", "application/json")
+        }
+    }
+}
+```
+
+## Gradle 설정 (build.gradle.kts)
+```kotlin
+plugins {
+    kotlin("jvm") version "1.9.20"
+    kotlin("plugin.spring") version "1.9.20"
+    kotlin("plugin.jpa") version "1.9.20"
+    id("org.springframework.boot") version "3.4.4"
+    id("io.spring.dependency-management") version "1.1.4"
+    id("org.jlleitschuh.gradle.ktlint") version "11.6.1"
+}
+
+dependencies {
+    implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+    implementation("org.springframework.boot:spring-boot-starter-security")
+    implementation("org.springframework.boot:spring-boot-starter-validation")
+    implementation("org.springframework.boot:spring-boot-starter-data-redis")
+    implementation("org.springframework.cloud:spring-cloud-starter-openfeign")
+    
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+    implementation("org.jetbrains.kotlin:kotlin-reflect")
+    
+    implementation("io.jsonwebtoken:jjwt-api:0.11.5")
+    runtimeOnly("io.jsonwebtoken:jjwt-impl:0.11.5")
+    runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.11.5")
+    
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.2.0")
+    
+    runtimeOnly("com.mysql:mysql-connector-j")
+}
+```
+
+이 가이드라인을 따라 일관성 있고 유지보수가 용이한 Spring Boot + Kotlin 백엔드 애플리케이션을 개발하세요.
